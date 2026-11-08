@@ -1,0 +1,70 @@
+# ==========================================
+# InvoiceAI Comprehensive .gitignore
+# ==========================================
+
+# Dependencies
+node_modules/
+*/node_modules/
+.pnp
+.pnp.js
+
+# Build Outputs & Artifacts
+dist/
+*/dist/
+build/
+*/build/
+.next/
+out/
+.vite/
+*.tsbuildinfo
+
+# Environment & Secret Files (CRITICAL)
+.env
+.env.*
+*.env
+!.env.example
+!*/.env.example
+
+# Vercel Project Metadata
+.vercel
+
+# Uploaded Files & User Content (Keep structure with .gitkeep)
+backend/uploads/*
+!backend/uploads/**/.gitkeep
+uploads/*
+!uploads/**/.gitkeep
+
+# Temporary & Test Files
+*.pdf
+!public/*.pdf
+*.tmp
+*.temp
+test-download.pdf
+
+# Logs & Debugging
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE Configurations
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
