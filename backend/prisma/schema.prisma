@@ -302,7 +302,7 @@ model IncomingInvoice {
   taxAmount              Decimal               @default(0.00) @db.Decimal(12, 2)
   totalAmount            Decimal               @default(0.00) @db.Decimal(12, 2)
   status                 IncomingInvoiceStatus @default(PENDING_REVIEW)
-  ocrRawText             String?               @db.LongText
+  ocrRawText             String?               @db.Text
   aiExtractionConfidence Decimal               @default(0.00) @db.Decimal(5, 2)
   filePath               String?
   notes                  String?               @db.Text
