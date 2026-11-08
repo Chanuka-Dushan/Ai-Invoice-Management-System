@@ -1,0 +1,468 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  ACCOUNTANT
+  STAFF
+}
+
+enum CustomerType {
+  INDIVIDUAL
+  BUSINESS
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  PARTIALLY_PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum IncomingInvoiceStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  CREDIT_CARD
+  ONLINE_GATEWAY
+  OTHER
+}
+
+enum PaymentStatus {
+  COMPLETED
+  PENDING
+  FAILED
+  REFUNDED
+}
+
+enum TemplateLayout {
+  MODERN
+  MINIMAL
+  CORPORATE
+  CREATIVE
+}
+
+model User {
+  id               String          @id @default(uuid())
+  email            String          @unique
+  passwordHash     String
+  firstName        String
+  lastName         String
+  phone            String?
+  avatarUrl        String?
+  isSuperAdmin     Boolean         @default(false)
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  companyMembers   CompanyMember[]
+  auditLogs        AuditLog[]
+  aiJobLogs        AiJobLog[]
+
+  @@map("users")
+}
+
+model Company {
+  id                     String           @id @default(uuid())
+  name                   String
+  slug                   String           @unique
+  logoUrl                String?
+  businessRegNumber      String?
+  taxNumber              String?
+  email                  String
+  phone                  String?
+  website                String?
+  address1               String?
+  address2               String?
+  city                   String?
+  state                  String?
+  postalCode             String?
+  country                String?          @default("Sri Lanka")
+  defaultCurrency        String           @default("USD")
+  defaultPaymentTerms    String?          @db.Text
+  bankDetails            String?          @db.Text
+  defaultInvoiceFooter   String?          @db.Text
+  brandColor             String           @default("#1e3a8a")
+  isActive               Boolean          @default(true)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  members                CompanyMember[]
+  customers              Customer[]
+  suppliers              Supplier[]
+  products               Product[]
+  invoices               Invoice[]
+  incomingInvoices       IncomingInvoice[]
+  payments               Payment[]
+  templates              InvoiceTemplate[]
+  auditLogs              AuditLog[]
+  emailLogs              EmailLog[]
+  aiJobLogs              AiJobLog[]
+
+  @@map("companies")
+}
+
+model CompanyMember {
+  id        String   @id @default(uuid())
+  companyId String
+  userId    String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+  @@map("company_members")
+}
+
+model Customer {
+  id                   String        @id @default(uuid())
+  companyId            String
+  type                 CustomerType  @default(BUSINESS)
+  name                 String
+  companyName          String?
+  email                String?
+  phone                String?
+  address1             String?
+  address2             String?
+  city                 String?
+  state                String?
+  postalCode           String?
+  country              String?
+  taxId                String?
+  notes                String?       @db.Text
+  isArchived           Boolean       @default(false)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  company              Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoices             Invoice[]
+
+  @@index([companyId])
+  @@index([email])
+  @@map("customers")
+}
+
+model Supplier {
+  id                   String            @id @default(uuid())
+  companyId            String
+  name                 String
+  contactPerson        String?
+  email                String?
+  phone                String?
+  address              String?           @db.Text
+  taxId                String?
+  notes                String?           @db.Text
+  isArchived           Boolean           @default(false)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  company              Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  incomingInvoices     IncomingInvoice[]
+
+  @@index([companyId])
+  @@map("suppliers")
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  companyId   String
+  name        String
+  description String?       @db.Text
+  sku         String?
+  unitPrice   Decimal       @default(0.00) @db.Decimal(12, 2)
+  taxRate     Decimal       @default(0.00) @db.Decimal(5, 2)
+  unit        String        @default("pcs")
+  isArchived  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  company     Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoiceItems InvoiceItem[]
+
+  @@index([companyId])
+  @@map("products")
+}
+
+model Invoice {
+  id                   String            @id @default(uuid())
+  companyId            String
+  customerId           String
+  invoiceNumber        String
+  referenceNumber      String?
+  issueDate            DateTime
+  dueDate              DateTime
+  currency             String            @default("USD")
+  status               InvoiceStatus     @default(DRAFT)
+  subtotal             Decimal           @default(0.00) @db.Decimal(12, 2)
+  discountType         DiscountType      @default(PERCENTAGE)
+  discountValue        Decimal           @default(0.00) @db.Decimal(10, 2)
+  discountAmount       Decimal           @default(0.00) @db.Decimal(12, 2)
+  taxAmount            Decimal           @default(0.00) @db.Decimal(12, 2)
+  shippingAmount       Decimal           @default(0.00) @db.Decimal(12, 2)
+  totalAmount          Decimal           @default(0.00) @db.Decimal(12, 2)
+  paidAmount           Decimal           @default(0.00) @db.Decimal(12, 2)
+  outstandingBalance   Decimal           @default(0.00) @db.Decimal(12, 2)
+  notes                String?           @db.Text
+  termsAndConditions   String?           @db.Text
+  paymentInstructions  String?           @db.Text
+  templateName         TemplateLayout    @default(MODERN)
+  isAiGenerated        Boolean           @default(false)
+  aiPromptUsed         String?           @db.Text
+  publicToken          String            @unique @default(uuid())
+  tokenExpiresAt       DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  company              Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer             Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items                InvoiceItem[]
+  payments             Payment[]
+  documents            InvoiceDocument[]
+  publicLinks          PublicInvoiceLink[]
+
+  @@unique([companyId, invoiceNumber])
+  @@index([companyId, status])
+  @@index([customerId])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id           String    @id @default(uuid())
+  invoiceId    String
+  productId    String?
+  name         String
+  description  String?   @db.Text
+  quantity     Decimal   @default(1.00) @db.Decimal(10, 2)
+  unitPrice    Decimal   @default(0.00) @db.Decimal(12, 2)
+  discountRate Decimal   @default(0.00) @db.Decimal(5, 2)
+  taxRate      Decimal   @default(0.00) @db.Decimal(5, 2)
+  lineTotal    Decimal   @default(0.00) @db.Decimal(12, 2)
+  sortOrder    Int       @default(0)
+
+  invoice      Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product      Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+model InvoiceDocument {
+  id                String           @id @default(uuid())
+  companyId         String
+  invoiceId         String?
+  incomingInvoiceId String?
+  fileName          String
+  originalName      String
+  mimeType          String
+  fileSize          Int
+  filePath          String
+  fileType          String           @default("ATTACHMENT")
+  createdAt         DateTime         @default(now())
+
+  invoice           Invoice?         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  incomingInvoice   IncomingInvoice? @relation(fields: [incomingInvoiceId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("invoice_documents")
+}
+
+model IncomingInvoice {
+  id                     String                @id @default(uuid())
+  companyId              String
+  supplierId             String?
+  invoiceNumber          String?
+  invoiceDate            DateTime?
+  dueDate                DateTime?
+  currency               String                @default("USD")
+  subtotal               Decimal               @default(0.00) @db.Decimal(12, 2)
+  taxAmount              Decimal               @default(0.00) @db.Decimal(12, 2)
+  totalAmount            Decimal               @default(0.00) @db.Decimal(12, 2)
+  status                 IncomingInvoiceStatus @default(PENDING_REVIEW)
+  ocrRawText             String?               @db.Text
+  aiExtractionConfidence Decimal               @default(0.00) @db.Decimal(5, 2)
+  filePath               String?
+  notes                  String?               @db.Text
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  company                Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplier               Supplier?             @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  items                  IncomingInvoiceItem[]
+  documents              InvoiceDocument[]
+  payments               Payment[]
+
+  @@index([companyId, status])
+  @@map("incoming_invoices")
+}
+
+model IncomingInvoiceItem {
+  id                String          @id @default(uuid())
+  incomingInvoiceId String
+  description       String
+  quantity          Decimal         @default(1.00) @db.Decimal(10, 2)
+  unitPrice         Decimal         @default(0.00) @db.Decimal(12, 2)
+  taxRate           Decimal         @default(0.00) @db.Decimal(5, 2)
+  total             Decimal         @default(0.00) @db.Decimal(12, 2)
+
+  incomingInvoice   IncomingInvoice @relation(fields: [incomingInvoiceId], references: [id], onDelete: Cascade)
+
+  @@index([incomingInvoiceId])
+  @@map("incoming_invoice_items")
+}
+
+model InvoiceTemplate {
+  id           String         @id @default(uuid())
+  companyId    String
+  name         String
+  layoutType   TemplateLayout @default(MODERN)
+  isDefault    Boolean        @default(false)
+  customStyles String?        @db.Text
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  company      Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("invoice_templates")
+}
+
+model Payment {
+  id                    String          @id @default(uuid())
+  companyId             String
+  invoiceId             String?
+  incomingInvoiceId     String?
+  amount                Decimal         @default(0.00) @db.Decimal(12, 2)
+  currency              String          @default("USD")
+  paymentDate           DateTime        @default(now())
+  paymentMethod         PaymentMethod   @default(BANK_TRANSFER)
+  transactionReference  String?
+  notes                 String?         @db.Text
+  status                PaymentStatus   @default(COMPLETED)
+  gatewayProvider       String?
+  gatewayTransactionId  String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  company               Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoice               Invoice?        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  incomingInvoice       IncomingInvoice? @relation(fields: [incomingInvoiceId], references: [id], onDelete: Cascade)
+  transactions          PaymentTransaction[]
+
+  @@index([companyId])
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+model PaymentTransaction {
+  id                String   @id @default(uuid())
+  paymentId         String
+  gateway           String
+  gatewayOrderId    String?
+  gatewayPaymentId  String?
+  payloadJson       String?  @db.Text
+  signatureVerified Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  payment           Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@map("payment_transactions")
+}
+
+model PublicInvoiceLink {
+  id           String    @id @default(uuid())
+  invoiceId    String
+  token        String    @unique @default(uuid())
+  viewsCount   Int       @default(0)
+  lastViewedAt DateTime?
+  isRevoked    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime?
+
+  invoice      Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("public_invoice_links")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  companyId   String?
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String?
+  detailsJson String?  @db.Text
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model EmailLog {
+  id             String   @id @default(uuid())
+  companyId      String
+  recipientEmail String
+  subject        String
+  templateType   String
+  status         String   @default("SENT")
+  errorMessage   String?  @db.Text
+  sentAt         DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("email_logs")
+}
+
+model AiJobLog {
+  id            String   @id @default(uuid())
+  companyId     String
+  userId        String?
+  jobType       String
+  promptSummary String?  @db.Text
+  status        String   @default("SUCCESS")
+  tokensUsed    Int      @default(0)
+  durationMs    Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@map("ai_job_logs")
+}
+
+
