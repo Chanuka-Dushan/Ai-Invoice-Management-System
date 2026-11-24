@@ -89,3 +89,4 @@ The backend is configured with `@nestjs/platform-express` and an automated serve
 The `.gitignore` has been carefully configured to ensure security and prevent accidental exposure:
 * **Included in Git:** Clean source code, TypeScript configuration, package manifests, and sample environment templates (`.env.example`).
 * **Excluded from Git:** `node_modules/`, `dist/`, local `.env` secrets, uploaded user files, temporary PDFs, and IDE caches.
+
