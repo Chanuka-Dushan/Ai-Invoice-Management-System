@@ -15,6 +15,7 @@ import { ReportsModule } from './reports/reports.module';
 import { PdfModule } from './pdf/pdf.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SuperAdminModule } from './super-admin/super-admin.module';
+import { ExternalApiModule } from './external-api/external-api.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { SuperAdminModule } from './super-admin/super-admin.module';
     PdfModule,
     NotificationsModule,
     SuperAdminModule,
+    ExternalApiModule,
   ],
 })
 export class AppModule {}

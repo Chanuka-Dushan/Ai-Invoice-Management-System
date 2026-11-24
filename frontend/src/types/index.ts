@@ -68,6 +68,7 @@ export interface PlatformStats {
     email: string;
     membersCount: number;
     invoicesCount: number;
+    customersCount?: number;
     isActive: boolean;
     createdAt: string;
   }>;
@@ -80,6 +81,59 @@ export interface PlatformStats {
     isActive: boolean;
     createdAt: string;
   }>;
+  recentCustomers?: Array<{
+    id: string;
+    name: string;
+    companyName?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    type: string;
+    company?: { id: string; name: string; defaultCurrency: string };
+    invoicesCount: number;
+    createdAt: string;
+  }>;
+  recentInvoices?: Array<{
+    id: string;
+    invoiceNumber: string;
+    status: InvoiceStatus;
+    currency: string;
+    totalAmount: number;
+    paidAmount: number;
+    outstandingBalance: number;
+    company?: { id: string; name: string };
+    customer?: { id: string; name: string; email?: string };
+    createdAt: string;
+  }>;
+}
+
+export interface PlatformCustomer {
+  id: string;
+  name: string;
+  companyName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  type: CustomerType;
+  address?: string;
+  createdAt: string;
+  company?: { id: string; name: string; defaultCurrency: string };
+  invoicesCount: number;
+  totalInvoiced: number;
+  totalOutstanding: number;
+}
+
+export interface PlatformInvoice {
+  id: string;
+  invoiceNumber: string;
+  status: InvoiceStatus;
+  currency: string;
+  totalAmount: number;
+  paidAmount: number;
+  outstandingBalance: number;
+  issueDate: string;
+  dueDate: string;
+  createdAt: string;
+  company?: { id: string; name: string };
+  customer?: { id: string; name: string; email?: string };
 }
 
 export interface PlatformCompany {

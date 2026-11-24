@@ -23,6 +23,8 @@ import { PlatformDashboardPage } from './pages/admin/PlatformDashboardPage';
 import { PlatformCompaniesPage } from './pages/admin/PlatformCompaniesPage';
 import { PlatformUsersPage } from './pages/admin/PlatformUsersPage';
 import { PlatformAuditLogsPage } from './pages/admin/PlatformAuditLogsPage';
+import { PlatformCustomersPage } from './pages/admin/PlatformCustomersPage';
+import { PlatformInvoicesPage } from './pages/admin/PlatformInvoicesPage';
 import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -88,6 +90,8 @@ export const App: React.FC = () => {
         >
           <Route index element={<PlatformDashboardPage />} />
           <Route path="companies" element={<PlatformCompaniesPage />} />
+          <Route path="customers" element={<PlatformCustomersPage />} />
+          <Route path="invoices" element={<PlatformInvoicesPage />} />
           <Route path="users" element={<PlatformUsersPage />} />
           <Route path="audit-logs" element={<PlatformAuditLogsPage />} />
         </Route>

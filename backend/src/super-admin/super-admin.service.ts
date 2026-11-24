@@ -14,6 +14,8 @@ export class SuperAdminService {
       invoices,
       recentCompanies,
       recentUsers,
+      recentCustomers,
+      recentInvoices,
     ] = await Promise.all([
       this.prisma.company.count(),
       this.prisma.user.count(),
@@ -31,7 +33,7 @@ export class SuperAdminService {
         orderBy: { createdAt: 'desc' },
         take: 5,
         include: {
-          _count: { select: { members: true, invoices: true } },
+          _count: { select: { members: true, invoices: true, customers: true } },
         },
       }),
       this.prisma.user.findMany({
@@ -45,6 +47,22 @@ export class SuperAdminService {
           isSuperAdmin: true,
           isActive: true,
           createdAt: true,
+        },
+      }),
+      this.prisma.customer.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 6,
+        include: {
+          company: { select: { id: true, name: true, defaultCurrency: true } },
+          _count: { select: { invoices: true } },
+        },
+      }),
+      this.prisma.invoice.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 6,
+        include: {
+          company: { select: { id: true, name: true } },
+          customer: { select: { id: true, name: true, email: true } },
         },
       }),
     ]);
@@ -71,10 +89,34 @@ export class SuperAdminService {
         email: c.email,
         membersCount: c._count.members,
         invoicesCount: c._count.invoices,
+        customersCount: c._count.customers,
         isActive: c.isActive,
         createdAt: c.createdAt,
       })),
       recentUsers,
+      recentCustomers: recentCustomers.map((c) => ({
+        id: c.id,
+        name: c.name,
+        companyName: c.companyName,
+        email: c.email,
+        phone: c.phone,
+        type: c.type,
+        company: c.company,
+        invoicesCount: c._count.invoices,
+        createdAt: c.createdAt,
+      })),
+      recentInvoices: recentInvoices.map((i) => ({
+        id: i.id,
+        invoiceNumber: i.invoiceNumber,
+        status: i.status,
+        currency: i.currency,
+        totalAmount: Number(i.totalAmount || 0),
+        paidAmount: Number(i.paidAmount || 0),
+        outstandingBalance: Number(i.outstandingBalance || 0),
+        company: i.company,
+        customer: i.customer,
+        createdAt: i.createdAt,
+      })),
     };
   }
 
@@ -235,6 +277,100 @@ export class SuperAdminService {
         user: { select: { email: true, firstName: true, lastName: true } },
       },
     });
+  }
+
+  async getAllCustomers(query?: string) {
+    const where: any = {};
+    if (query?.trim()) {
+      const q = query.trim();
+      where.OR = [
+        { name: { contains: q } },
+        { email: { contains: q } },
+        { phone: { contains: q } },
+        { companyName: { contains: q } },
+        { company: { name: { contains: q } } },
+      ];
+    }
+
+    const customers = await this.prisma.customer.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        company: {
+          select: { id: true, name: true, defaultCurrency: true },
+        },
+        _count: {
+          select: { invoices: true },
+        },
+        invoices: {
+          select: {
+            totalAmount: true,
+            paidAmount: true,
+            outstandingBalance: true,
+          },
+        },
+      },
+    });
+
+    return customers.map((c) => {
+      const totalInvoiced = c.invoices.reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
+      const totalOutstanding = c.invoices.reduce((sum, i) => sum + Number(i.outstandingBalance || 0), 0);
+      return {
+        id: c.id,
+        name: c.name,
+        companyName: c.companyName,
+        email: c.email,
+        phone: c.phone,
+        type: c.type,
+        address: [c.address1, c.city, c.country].filter(Boolean).join(', '),
+        createdAt: c.createdAt,
+        company: c.company,
+        invoicesCount: c._count.invoices,
+        totalInvoiced: Math.round(totalInvoiced * 100) / 100,
+        totalOutstanding: Math.round(totalOutstanding * 100) / 100,
+      };
+    });
+  }
+
+  async getAllInvoices(query?: string, status?: string) {
+    const where: any = {};
+    if (status && status !== 'ALL') {
+      where.status = status as any;
+    }
+    if (query?.trim()) {
+      const q = query.trim();
+      where.OR = [
+        { invoiceNumber: { contains: q } },
+        { customer: { name: { contains: q } } },
+        { customer: { email: { contains: q } } },
+        { company: { name: { contains: q } } },
+      ];
+    }
+
+    const invoices = await this.prisma.invoice.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: {
+        company: { select: { id: true, name: true } },
+        customer: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return invoices.map((inv) => ({
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      status: inv.status,
+      currency: inv.currency,
+      totalAmount: Number(inv.totalAmount || 0),
+      paidAmount: Number(inv.paidAmount || 0),
+      outstandingBalance: Number(inv.outstandingBalance || 0),
+      issueDate: inv.issueDate,
+      dueDate: inv.dueDate,
+      createdAt: inv.createdAt,
+      company: inv.company,
+      customer: inv.customer,
+    }));
   }
 }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   FileText,
@@ -17,6 +17,10 @@ import {
   Building2,
   Activity,
   History,
+  UserCheck,
+  Globe,
+  Plug,
+  ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -34,6 +38,7 @@ export const Sidebar: React.FC = () => {
     { label: 'Payments', path: '/payments', icon: CreditCard },
     { label: 'Reports', path: '/reports', icon: BarChart3 },
     { label: 'AI Assistant', path: '/ai-assistant', icon: Sparkles, badge: 'AI' },
+    { label: 'API & Integrations', path: '/settings/api', icon: Plug },
     { label: 'Company Settings', path: '/settings', icon: Building },
     { label: 'Profile', path: '/profile', icon: UserIcon },
   ];
@@ -41,26 +46,34 @@ export const Sidebar: React.FC = () => {
   const adminNavItems = [
     { label: 'Platform Overview', path: '/admin', icon: Activity },
     { label: 'Tenant Companies', path: '/admin/companies', icon: Building2 },
+    { label: 'Global Customers', path: '/admin/customers', icon: UserCheck },
+    { label: 'Global Invoices', path: '/admin/invoices', icon: FileText },
     { label: 'Platform Users', path: '/admin/users', icon: Users },
     { label: 'System Audit Logs', path: '/admin/audit-logs', icon: History },
   ];
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen shrink-0 border-r border-slate-800">
-      {/* Brand Header */}
-      <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-800/80">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+      {/* Brand Header: Click to go to Landing Page */}
+      <Link
+        to="/"
+        className="h-16 flex items-center gap-3 px-6 border-b border-slate-800/80 hover:bg-slate-800/30 transition-colors group"
+        title="View Landing Page"
+      >
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
           <Sparkles className="w-5 h-5" />
         </div>
         <div>
           <span className="text-lg font-black text-white tracking-tight flex items-center gap-1.5">
             Invoice<span className="text-indigo-400">AI</span>
           </span>
-          <span className="text-[10px] font-semibold text-slate-400 block -mt-1 tracking-wider uppercase">
-            SaaS Platform
+          <span className="text-[10px] font-semibold text-slate-400 block -mt-1 tracking-wider uppercase flex items-center gap-1">
+            <span>SaaS Platform</span>
+            <span className="text-slate-600">•</span>
+            <span className="text-indigo-400/80 group-hover:text-indigo-300">Home</span>
           </span>
         </div>
-      </div>
+      </Link>
 
       {/* Quick Action Button */}
       <div className="p-4">
@@ -102,9 +115,24 @@ export const Sidebar: React.FC = () => {
           ))}
         </div>
 
+        {/* Public Website / Landing Page Direct Link */}
+        <div className="pt-2 mt-2 border-t border-slate-800/80 px-1">
+          <Link
+            to="/"
+            className="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors group"
+            title="Open Public Landing Page"
+          >
+            <div className="flex items-center gap-3">
+              <Globe className="w-4 h-4 text-indigo-400 group-hover:rotate-12 transition-transform" />
+              <span>Landing Page</span>
+            </div>
+            <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-300 group-hover:translate-x-0.5 transition-all" />
+          </Link>
+        </div>
+
         {/* Super Admin Section (Only visible to Platform Super Admins) */}
         {user?.isSuperAdmin && (
-          <div className="pt-4 mt-3 border-t border-slate-800/80 space-y-1">
+          <div className="pt-3 mt-2 border-t border-slate-800/80 space-y-1">
             <div className="px-3.5 py-1 text-[10px] font-black uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
               <ShieldAlert className="w-3 h-3 text-rose-400" />
               <span>Platform Admin</span>
@@ -148,3 +176,4 @@ export const Sidebar: React.FC = () => {
   );
 };
 
+export default Sidebar;

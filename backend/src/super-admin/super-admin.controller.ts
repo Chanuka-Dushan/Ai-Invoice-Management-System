@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { SuperAdminService } from './super-admin.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { SuperAdminGuard } from '../common/guards/super-admin.guard';
@@ -55,6 +55,19 @@ export class SuperAdminController {
   @Get('audit-logs')
   async getAuditLogs() {
     return this.superAdminService.getPlatformAuditLogs();
+  }
+
+  @Get('customers')
+  async getCustomers(@Query('search') search?: string) {
+    return this.superAdminService.getAllCustomers(search);
+  }
+
+  @Get('invoices')
+  async getInvoices(
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.superAdminService.getAllInvoices(search, status);
   }
 }
 

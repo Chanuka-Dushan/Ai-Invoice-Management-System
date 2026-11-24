@@ -143,5 +143,19 @@ export class CompaniesController {
   ) {
     return this.companiesService.removeMember(companyId, memberId);
   }
+
+  @Get('active/api-key')
+  @UseGuards(CompanyAccessGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN)
+  async getApiKey(@CurrentCompanyId() companyId: string) {
+    return this.companiesService.getApiKey(companyId);
+  }
+
+  @Post('active/api-key/regenerate')
+  @UseGuards(CompanyAccessGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN)
+  async regenerateApiKey(@CurrentCompanyId() companyId: string) {
+    return this.companiesService.regenerateApiKey(companyId);
+  }
 }
 

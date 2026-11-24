@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCompanyDto, UpdateCompanyDto, AddMemberDto } from './dto/company.dto';
 import { Role } from '@prisma/client';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class CompaniesService {
@@ -202,6 +203,36 @@ export class CompaniesService {
     });
 
     return { message: 'Member removed successfully' };
+  }
+
+  async getApiKey(companyId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true, name: true, apiKey: true },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+
+    if (!company.apiKey) {
+      const generated = `inv_live_${crypto.randomBytes(24).toString('hex')}`;
+      const updated = await this.prisma.company.update({
+        where: { id: companyId },
+        data: { apiKey: generated },
+        select: { id: true, name: true, apiKey: true },
+      });
+      return { apiKey: updated.apiKey };
+    }
+
+    return { apiKey: company.apiKey };
+  }
+
+  async regenerateApiKey(companyId: string) {
+    const newKey = `inv_live_${crypto.randomBytes(24).toString('hex')}`;
+    const updated = await this.prisma.company.update({
+      where: { id: companyId },
+      data: { apiKey: newKey },
+      select: { id: true, name: true, apiKey: true },
+    });
+    return { apiKey: updated.apiKey };
   }
 }
 
